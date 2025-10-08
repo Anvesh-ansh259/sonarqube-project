@@ -1,17 +1,17 @@
 pipeline {
-    agent { label 'sonarqube-node' } // your agent
+    agent { label 'sonarqube-node' }
 
     environment {
-        SONAR_TOKEN = credentials('SONAR_TOKEN') // add your SonarQube token in Jenkins credentials
-        SONAR_HOST = 'http://3.80.136.249:9000' // your SonarQube server URL
+        SONAR_TOKEN = credentials('SONAR_TOKEN') // Token with Execute Analysis + Browse permissions
+        SONAR_HOST = 'http://3.80.136.249:9000'
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
                 checkout([
-                    $class: 'GitSCM', 
-                    branches: [[name: '*/main']], 
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/Anvesh-ansh259/sonarqube-project.git',
                         credentialsId: 'github-pat'
@@ -22,12 +22,8 @@ pipeline {
 
         stage('Compile Java') {
             steps {
-                script {
-                    // Create a directory for compiled classes
-                    sh 'mkdir -p target/classes'
-                    // Compile Java files
-                    sh 'javac -d target/classes src/main/java/*.java'
-                }
+                sh 'mkdir -p target/classes'
+                sh 'javac -d target/classes src/main/java/*.java'
             }
         }
 
@@ -41,7 +37,7 @@ pipeline {
                         -Dsonar.sources=src/main/java \
                         -Dsonar.java.binaries=target/classes \
                         -Dsonar.host.url=${SONAR_HOST} \
-                        -Dsonar.login=${SONAR_TOKEN}
+                        -Dsonar.token=${SONAR_TOKEN}  // Use sonar.token instead of sonar.login
                     """
                 }
             }
