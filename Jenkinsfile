@@ -36,4 +36,32 @@ pipeline {
                 withSonarQubeEnv('SonarQube') {
                     sh """
                         sonar-scanner \
-                        -Dsonar.projectKey=JavaApp
+                        -Dsonar.projectKey=JavaApp \
+                        -Dsonar.projectName=JavaApp \
+                        -Dsonar.sources=src/main/java \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.host.url=${SONAR_HOST} \
+                        -Dsonar.login=${SONAR_TOKEN}
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully! ✅'
+        }
+        failure {
+            echo 'Pipeline failed! ❌ Check SonarQube report.'
+        }
+    }
+}
