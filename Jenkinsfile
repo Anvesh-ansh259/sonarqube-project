@@ -1,16 +1,17 @@
 pipeline {
-    agent { label 'sonarqube-node' }
+    agent { label 'sonarqube-node' } // your agent label
 
     environment {
-        SONAR_HOST = 'http://3.80.136.249:9000' // SonarQube server URL
+        SONAR_TOKEN = credentials('SONAR_TOKEN') // Jenkins credential for admin token
+        SONAR_HOST = 'http://3.80.136.249:9000'  // SonarQube server URL
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
                 checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
+                    $class: 'GitSCM', 
+                    branches: [[name: '*/main']], 
                     userRemoteConfigs: [[
                         url: 'https://github.com/Anvesh-ansh259/sonarqube-project.git',
                         credentialsId: 'github-pat'
@@ -21,31 +22,34 @@ pipeline {
 
         stage('Compile Java') {
             steps {
-                sh 'mkdir -p target/classes'
-                sh 'javac -d target/classes src/main/java/*.java'
+                script {
+                    // Create directory for compiled classes
+                    sh 'mkdir -p target/classes'
+                    // Compile Java source files
+                    sh 'javac -d target/classes src/main/java/*.java'
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-                        sh '''
-                            sonar-scanner \
-                            -Dsonar.projectKey=JavaApp \
-                            -Dsonar.projectName=JavaApp \
-                            -Dsonar.sources=src/main/java \
-                            -Dsonar.java.binaries=target/classes \
-                            -Dsonar.host.url=${SONAR_HOST} \
-                            -Dsonar.token=${SONAR_TOKEN}
-                        '''
-                    }
+                    sh """
+                        sonar-scanner \
+                        -Dsonar.projectKey=JavaAppTest \
+                        -Dsonar.projectName=JavaAppTest \
+                        -Dsonar.sources=src/main/java \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.host.url=${SONAR_HOST} \
+                        -Dsonar.token=${SONAR_TOKEN}
+                    """
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
+                // Wait up to 10 minutes for Quality Gate result
                 timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
