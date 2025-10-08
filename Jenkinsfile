@@ -1,60 +1,47 @@
 pipeline {
-    agent { label 'sonarqube-node' } // your agent name
-
-    // Use tools configured in Jenkins Global Tool Configuration
-    tools {
-        maven 'Maven3'   // exact name from Jenkins Maven config
-        jdk 'Java17'     // exact name from Jenkins JDK config
-    }
+    agent { label 'sonarqube-node' } // your agent
 
     environment {
-        // SonarQube server configured in Jenkins Global Tool Configuration
-        SONARQUBE_ENV = 'SonarQube' 
+        // SonarQube token and server URL
+        SONAR_HOST_URL = 'http://3.80.136.249:9000'
+        SONAR_TOKEN = 'sonartoken'  // replace with your actual token
     }
 
     stages {
-
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/Anvesh-ansh259/sonarqube-project.git',
-                    credentialsId: 'github-pat' // your GitHub credentials ID in Jenkins
+                git url: 'https://github.com/Anvesh-ansh259/sonarqube-project.git', branch: 'main'
             }
         }
 
-        stage('Build') {
+        stage('Install Dependencies') {
             steps {
-                echo 'Running Maven Build...'
-                sh 'mvn clean package'
+                sh 'npm install'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                echo 'Running SonarQube Analysis...'
-                // Use SonarQube environment configured in Jenkins
-                withSonarQubeEnv("${SONARQUBE_ENV}") {
-                    sh 'mvn sonar:sonar'
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                echo 'Waiting for SonarQube Quality Gate...'
-                timeout(time: 1, unit: 'HOURS') { // timeout if SQ server takes long
-                    waitForQualityGate abortPipeline: true
-                }
+                sh """
+                    sonar-scanner \
+                    -Dsonar.projectKey=my_first_sonarqube_project \
+                    -Dsonar.projectName="My First SonarQube Project" \
+                    -Dsonar.projectVersion=1.0 \
+                    -Dsonar.sources=. \
+                    -Dsonar.language=js \
+                    -Dsonar.host.url=$SONAR_HOST_URL \
+                    -Dsonar.login=$SONAR_TOKEN
+                """
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo "SonarQube analysis completed successfully!"
         }
         failure {
-            echo 'Pipeline failed!'
+            echo "Build failed or SonarQube analysis failed."
         }
     }
 }
