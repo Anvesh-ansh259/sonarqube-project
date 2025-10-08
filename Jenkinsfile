@@ -2,20 +2,17 @@ pipeline {
     agent any
 
     environment {
-        // SonarQube server defined in Jenkins -> Configure System -> SonarQube servers
-        SONARQUBE_ENV = 'SonarQube'
-        // Jenkins credential containing the SonarQube admin token
+        // Jenkins Credential storing SonarQube Admin Token
         SONAR_TOKEN = credentials('SONAR_TOKEN')
+        SONAR_HOST_URL = 'http://3.80.136.249:9000'
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
-                git(
-                    url: 'https://github.com/Anvesh-ansh259/sonarqube-project.git',
-                    branch: 'main',
+                git branch: 'main', 
+                    url: 'https://github.com/Anvesh-ansh259/sonarqube-project.git', 
                     credentialsId: 'github-pat'
-                )
             }
         }
 
@@ -28,14 +25,14 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv(SONARQUBE_ENV) {
+                withSonarQubeEnv('SonarQube') { 
                     sh """
                         sonar-scanner \
-                        -Dsonar.projectKey=JavaAppTest \
-                        -Dsonar.projectName=JavaAppTest \
+                        -Dsonar.projectKey=JavaApp \
+                        -Dsonar.projectName=JavaApp \
                         -Dsonar.sources=src/main/java \
                         -Dsonar.java.binaries=target/classes \
-                        -Dsonar.host.url=${env.SONAR_HOST_URL} \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
                         -Dsonar.token=${SONAR_TOKEN}
                     """
                 }
@@ -45,7 +42,6 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
-                    // Wait for SonarQube Quality Gate result
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -54,10 +50,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Pipeline completed successfully.'
+            echo "✅ Pipeline completed successfully!"
         }
         failure {
-            echo '❌ Pipeline failed! Check SonarQube report.'
+            echo "❌ Pipeline failed! Check SonarQube report."
         }
     }
 }
