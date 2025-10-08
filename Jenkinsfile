@@ -2,8 +2,7 @@ pipeline {
     agent { label 'sonarqube-node' }
 
     environment {
-        SONAR_TOKEN = credentials('SONAR_TOKEN') // Token with Execute Analysis + Browse permissions
-        SONAR_HOST = 'http://3.80.136.249:9000'
+        SONAR_HOST = 'http://3.80.136.249:9000' // SonarQube server URL
     }
 
     stages {
@@ -30,15 +29,17 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh """
-                        sonar-scanner \
-                        -Dsonar.projectKey=JavaApp \
-                        -Dsonar.projectName=JavaApp \
-                        -Dsonar.sources=src/main/java \
-                        -Dsonar.java.binaries=target/classes \
-                        -Dsonar.host.url=${SONAR_HOST} \
-                        -Dsonar.token=${SONAR_TOKEN}  // Use sonar.token instead of sonar.login
-                    """
+                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+                        sh '''
+                            sonar-scanner \
+                            -Dsonar.projectKey=JavaApp \
+                            -Dsonar.projectName=JavaApp \
+                            -Dsonar.sources=src/main/java \
+                            -Dsonar.java.binaries=target/classes \
+                            -Dsonar.host.url=${SONAR_HOST} \
+                            -Dsonar.token=${SONAR_TOKEN}
+                        '''
+                    }
                 }
             }
         }
