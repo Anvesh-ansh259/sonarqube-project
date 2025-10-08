@@ -1,25 +1,31 @@
 pipeline {
     agent any
 
+    tools {
+        sonarQubeScanner 'SonarScanner'
+    }
+
     environment {
-        SCANNER_HOME = tool 'SonarScanner' // The name of SonarScanner in Jenkins
+        SONARQUBE_ENV = 'SonarQube'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/<your-username>/simple-sonar-project.git'
+                git branch: 'main', url: 'https://github.com/Anvesh-ansh259/sonarqube-project.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') { // Name of SonarQube server in Jenkins
-                    sh "${SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=simple-sonar-project \
-                        -Dsonar.sources=src \
-                        -Dsonar.host.url=http://<sonarqube-server-ip>:9000 \
-                        -Dsonar.login=<your-sonarqube-token>"
+                withSonarQubeEnv(SONARQUBE_ENV) {
+                    sh 'sonar-scanner -Dsonar.projectKey=my_first_sonarqube_project -Dsonar.sources=src'
                 }
             }
         }
@@ -30,6 +36,12 @@ pipeline {
                     waitForQualityGate abortPipeline: true
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed.'
         }
     }
 }
